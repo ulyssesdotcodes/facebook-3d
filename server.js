@@ -2,13 +2,18 @@
 var connect = require('connect')
     , express = require('express')
     , io = require('socket.io')
-    , port = (process.env.PORT || 3000);
+    , port = (process.env.PORT || 3000)
+    , FB = require('fb')
+    , config = require('./config')
+    , Step = require('step');
 
 //Setup Express
 var server = express.createServer();
 server.configure(function(){
     server.set('views', __dirname + '/views');
     server.set('view options', { layout: false });
+    server.set('view engine', 'ejs');
+    server.use(express.logger());
     server.use(connect.bodyParser());
     server.use(express.cookieParser());
     server.use(express.session({ secret: "shhhhhhhhh!"}));
@@ -50,6 +55,12 @@ io.sockets.on('connection', function(socket){
   });
 });
 
+//Setup FB
+FB.options({
+    appId:          config.facebook.appId,
+    appSecret:      config.facebook.appSecret,
+    redirectUri:    config.facebook.redirectUri
+});
 
 ///////////////////////////////////////////
 //              Routes                   //
@@ -57,6 +68,77 @@ io.sockets.on('connection', function(socket){
 
 /////// ADD ALL YOUR ROUTES HERE  /////////
 
+server.get('/', function(req, res){
+   var accessToken = req.session.access_token;
+   if(!accessToken){
+        res.render( 'login', {
+            loginUrl: FB.getLoginUrl({scope: 'user_about_me'})
+        });
+   } else {
+        res.render('index');
+   }
+});
+
+server.get('/login/callback', function(req, res, next) {
+  var code = req.query.code;
+  console.log(code);
+
+  if(req.query.error) {
+    return res.send('login-error' + req.query.error_description);
+  } else if (!code) {
+    return res.redirect('/');
+  }
+
+
+  Step(
+    function exchangeCodeForAccessToken() {
+      console.log(FB.options('appSecret'));
+      FB.napi('oauth/access_token',  {
+        client_id: FB.options('appId'),
+        client_secret: FB.options('appSecret'),
+        redirect_uri: FB.options('redirectUri'),
+        code: code
+      }, this);
+    },
+    function extendAccessToken(err, result) {
+      console.log(err);
+      FB.napi('oauth/access_token', {
+        client_id:          FB.options('appId'),
+        client_secret:      FB.options('appSecret'),
+        grant_type:         'fb_exchange_token',
+        fb_exchange_token:  result.access_token
+      }, this);
+    },
+    function (err, result) {
+      console.log(result);
+      if(err) console.log(err);   
+
+      req.session.access_token    = result.access_token;
+      req.session.expires         = result.expires || 0;
+
+      if(req.query.state) {
+        var params = JSON.parse(req.query.state);
+        params.access_token = req.session.access_token;
+
+        console.log(params);
+
+         FB.api('me', params, function (result) {
+            console.log(result);
+            if(!result || result.error) {
+                return res.send(500, result || 'error');
+                // return res.send(500, 'error');
+            }
+
+            return res.redirect('/');
+        });
+      } else {
+          return res.redirect('/');
+      }
+    }
+  );
+});
+
+//NEXT UP: A route for getting recent posts
 
 //A Route for Creating a 500 Error (Useful to keep around)
 server.get('/500', function(req, res){
@@ -67,6 +149,7 @@ server.get('/500', function(req, res){
 server.get('/*', function(req, res){
     throw new NotFound;
 });
+
 
 function NotFound(msg){
     this.name = 'NotFound';

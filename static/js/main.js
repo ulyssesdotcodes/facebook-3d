@@ -10,7 +10,9 @@ requirejs.config({
     'jquery-mobile'    : 'js/lib/jquery.mobile.min',
     'underscore'       : 'js/lib/underscore-amd',
     'three'            : 'js/lib/three.min',
-    'App'	             : 'js/script'
+    'PointerLockControls' : 'js/lib/PointerLockControls',
+    'physijs'          : 'js/lib/physi',
+    'App'	           : 'js/script'
   }
 });
 

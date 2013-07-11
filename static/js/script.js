@@ -126,15 +126,23 @@ define('App',
             renderer.render(scene, camera);
         };
 
+        function onWindowResize() {
+            WIDTH = $(window).width()-20;
+            HEIGHT = $(window).height()-20;
+
+            camera.aspect = WIDTH / HEIGHT;
+            camera.updateProjectionMatrix();
+            
+            renderer.setSize(WIDTH, HEIGHT);
+        }
+
+
 		$(document).ready(function() {   
 
             init();
             animate();
-
-			//Animation
-
-			var lastTime = 0;
-			var angularSpeed = 0.2;
+            
+            $(window).resize(onWindowResize);
 		});
 	}
 );

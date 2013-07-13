@@ -2,7 +2,7 @@
  * @author mrdoob / http://mrdoob.com/
  */
 define('PointerLockControls', ['three', 'physijs'], function(three, physijs){
-THREE.PointerLockControls = function ( camera ) {
+THREE.PointerLockControls = function ( camera,  x, y, z ) {
 
 	var scope = this;
     this.camera = camera;
@@ -10,7 +10,9 @@ THREE.PointerLockControls = function ( camera ) {
 	pitchObject.add( camera );
 
 	var yawObject = new THREE.Object3D();
-	yawObject.position.y = 10;
+	yawObject.position.x = y || 0;
+	yawObject.position.y = y || 10;
+	yawObject.position.z = z || 0;
 	yawObject.add( pitchObject );
 
 	var moveForward = false;

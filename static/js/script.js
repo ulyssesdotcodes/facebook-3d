@@ -21,9 +21,9 @@ define('App',
 
         var plane, sphere, objects = [];
        
-        var directionalLight, pointLight;
+        var directionalLight;
         
-        var ambientColor = 0x050505, pointColor = 0xffffff;
+        var ambientColor = 0x050505, directionalColor = 0xffffff;
 
         var groundSize = 300;
 
@@ -34,8 +34,8 @@ define('App',
             ////////////////////
             // Init variables after page loads
             ////////////////////
-            var WIDTH = $(window).width()-20,
-                HEIGHT = $(window).height()-20;
+            var WIDTH = $(window).innerWidth(),
+                HEIGHT = $(window).innerHeight();
             
             var VIEW_ANGLE = 45,
                 ASPECT = WIDTH / HEIGHT,
@@ -48,6 +48,8 @@ define('App',
             container = $("#stage");
 			
             renderer = new THREE.WebGLRenderer({antialias: true});
+            renderer.shadowMapEnabled = true;
+            renderer.shadowMapSoft = true;
             renderer.setSize(WIDTH, HEIGHT);
 
 			camera  = new THREE.PerspectiveCamera(
@@ -62,7 +64,7 @@ define('App',
             // Controls
             ////////////////////
 
-		    controls = new THREE.PointerLockControls(camera);
+		    controls = new THREE.PointerLockControls(camera, 0, 10, 50);
             controls.enabled = true;
 			scene.add(controls.getObject());
             
@@ -72,13 +74,22 @@ define('App',
 
             var ambient = new THREE.AmbientLight(ambientColor);
             scene.add(ambient);
-            
-            for(var i = -1; i < 2; i++){
-                pointLight = new THREE.PointLight(pointColor, 0.25);
-                pointLight.position.set(i * 50, 100, 0);
-                scene.add(pointLight);
-            }
 
+            directionalLight = new THREE.DirectionalLight(directionalColor, 1);
+            directionalLight.position.set(100, 100, 0);
+            scene.add(directionalLight);
+
+            directionalLight.castShadow = true;
+
+            directionalLight.shadowMapWidth = 2048;
+            directionalLight.shadowMapHeight = 2048;
+
+            var d = 50;
+
+            directionalLight.shadowCameraRight     =  d;
+            directionalLight.shadowCameraLeft     = -d;
+            directionalLight.shadowCameraTop      =  d;
+            directionalLight.shadowCameraBottom   = -d;
 
             /////////////////////
             // Ground
@@ -86,8 +97,10 @@ define('App',
             var mesh, material;
 
             plane = new THREE.PlaneGeometry(groundSize, groundSize);
-            material = new THREE.MeshPhongMaterial({emissive: 0x222222, specular: 0xbbbbbb, shininess: 50, reflectivity: 0.3});
+            material = new THREE.MeshPhongMaterial({emissive: 0xbbbbbb, shininess: 50, reflectivity: 0.9});
             mesh = new THREE.Mesh(plane, material);
+            mesh.receiveShadow = true;
+            mesh.castShadow = false;
             scene.add(mesh);
 
             // Flip plane to be horizontal
@@ -100,8 +113,13 @@ define('App',
             sphere = new THREE.SphereGeometry(10, 20, 20);
             material = new THREE.MeshPhongMaterial({specular: 0x3B5998, diffuse: 0x3B5998});
             mesh = new THREE.Mesh(sphere, material);
-            mesh.position.y = 10;
+            mesh.position.y = 15;
+            mesh.receiveShadow = false;
+            mesh.castShadow = true;
             scene.add(mesh);
+
+            //Point the light at it
+            directionalLight.target = mesh;
 
             // Add the renderer to the page
 			container.append(renderer.domElement);
@@ -127,8 +145,8 @@ define('App',
         };
 
         function onWindowResize() {
-            WIDTH = $(window).width()-20;
-            HEIGHT = $(window).height()-20;
+            WIDTH = $(window).innerWidth();
+            HEIGHT = $(window).innerHeight();
 
             camera.aspect = WIDTH / HEIGHT;
             camera.updateProjectionMatrix();

@@ -4,7 +4,7 @@ requirejs.config({
       exports: '_'
     }
   },
-  baseUrl:"/",
+  baseUrl:"./",
   paths: {
     'jquery'           : 'js/lib/jquery',
     'jquery-mobile'    : 'js/lib/jquery.mobile.min',

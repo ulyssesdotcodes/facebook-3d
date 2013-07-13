@@ -1,5 +1,5 @@
 'use strict';
-define('physijs', [], function(){
+define('physijs', ['three'], function(three){
 window.Physijs = (function() {
 
 	var THREE_REVISION = parseInt( THREE.REVISION, 10 ),

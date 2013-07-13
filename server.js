@@ -2,7 +2,7 @@
 var connect = require('connect')
     , express = require('express')
     , io = require('socket.io')
-    , port = (process.env.PORT || 3000)
+    , port = (process.env.PORT || 3030)
     , FB = require('fb')
     , config = require('./config')
     , Step = require('step')

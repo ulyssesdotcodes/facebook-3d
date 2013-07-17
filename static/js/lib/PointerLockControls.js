@@ -2,8 +2,8 @@
  * @author mrdoob / http://mrdoob.com/
  */
 define('PointerLockControls', ['three', 'physijs'], function(three, physijs){
-THREE.PointerLockControls = function ( camera,  x, y, z ) {
-
+THREE.PointerLockControls = function ( camera,  x, y, z, cameraScene ) {
+	var scene = cameraScene;
 	var scope = this;
     this.camera = camera;
 	var pitchObject = new THREE.Object3D();
@@ -19,6 +19,7 @@ THREE.PointerLockControls = function ( camera,  x, y, z ) {
 	var moveBackward = false;
 	var moveLeft = false;
 	var moveRight = false;
+	var resetLook = false;
 
 	var isOnObject = false;
 	var canJump = false;
@@ -37,8 +38,8 @@ THREE.PointerLockControls = function ( camera,  x, y, z ) {
 		var movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
 		var movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
 
-		yawObject.rotation.y -= movementX * 0.02;
-		pitchObject.rotation.x -= movementY * 0.02;
+		yawObject.rotation.y -= movementX * 0.01;
+		pitchObject.rotation.x -= movementY * 0.01;
 
 		pitchObject.rotation.x = Math.max( - PI_2, Math.min( PI_2, pitchObject.rotation.x ) );
 	};
@@ -69,6 +70,9 @@ THREE.PointerLockControls = function ( camera,  x, y, z ) {
 			case 32: // space
 				if ( canJump === true ) velocity.y += 10;
 				canJump = false;
+				break;
+			case 82: // r
+				resetLook = true;
 				break;
 
 		}
@@ -103,6 +107,9 @@ THREE.PointerLockControls = function ( camera,  x, y, z ) {
 
 	};
 
+
+	
+
 	document.addEventListener( 'mousemove', onMouseMove, false );
 	document.addEventListener( 'keydown', onKeyDown, false );
 	document.addEventListener( 'keyup', onKeyUp, false );
@@ -122,6 +129,61 @@ THREE.PointerLockControls = function ( camera,  x, y, z ) {
 
 	};
 
+
+	this.lookAt = function( target ) {
+		var rotVec, axisTarget, toTarget, angle, sign;
+
+		// Get the rotation vector, this is a vector from the current position to 1 unit in front of the camera
+		rotVec = yawObject.localToWorld(new THREE.Vector3(0,0,-1)).sub(yawObject.position);
+		rotVec.y = 0;
+		rotVec.normalize();
+
+        // The target has to be flattened to the xz plane so that rotation only occurs on the y axis
+        axisTarget = target.clone().sub(yawObject.position);
+        axisTarget.y = 0;
+        axisTarget.normalize();
+
+        //The angle to rotate on the y-axis (because we flattened it to the xz plane) 
+        angle = Math.acos(rotVec.dot(axisTarget));
+
+        // Finally figure out which direction to rotate in, and rotate the correct angle!
+        axisTarget.add(yawObject.position);
+        axisTarget = yawObject.worldToLocal(axisTarget);
+        rotVec.add(yawObject.position);
+        rotVec = yawObject.worldToLocal(rotVec);
+        sign = ( rotVec.x - axisTarget.x ) / Math.abs( rotVec.x - axisTarget.x );
+        behindCorrection = (axisTarget.z > 0) ? PI_2 : 0
+        yawObject.rotateOnAxis(new THREE.Vector3(0,1,0), sign * angle + behindCorrection);
+
+		
+		// Get the rotation vector, this is a vector from the current position to 1 unit in front of the camera
+		// Have to make this from the yawObject because the pitchObject is a child
+		rotVec = pitchObject.localToWorld(new THREE.Vector3(0,0,-1)).sub(yawObject.position);
+		rotVec.x = 0;
+		rotVec.normalize();
+
+        // The target has to be flattened to the yz plane so that rotation only occurs on the y axis
+        axisTarget = target.clone().sub(yawObject.position);
+        axisTarget.x = 0;
+        axisTarget.normalize();
+
+        //The angle to rotate on the x-axis (because we flattened it to the yz plane) 
+        angle = Math.acos(rotVec.dot(axisTarget));
+
+        // Finally figure out which direction to rotate in, and rotate the correct angle!
+        axisTarget.add(yawObject.position);
+        axisTarget = yawObject.worldToLocal(axisTarget);
+        rotVec.add(yawObject.position);
+        rotVec = yawObject.worldToLocal(rotVec);
+
+        sign = ( axisTarget.y -  rotVec.y ) / Math.abs( axisTarget.y - rotVec.y );
+        pitchObject.rotateOnAxis(new THREE.Vector3(1,0,0), sign * angle);
+
+		pitchObject.rotation.x = Math.max( - PI_2, Math.min( PI_2, pitchObject.rotation.x ) );
+
+		resetLook = false;
+	}
+
 	this.update = function ( delta, objects ) {
 
 		if ( scope.enabled === false ) return;
@@ -138,6 +200,8 @@ THREE.PointerLockControls = function ( camera,  x, y, z ) {
 
 		if ( moveLeft ) velocity.x -= 0.12 * delta;
 		if ( moveRight ) velocity.x += 0.12 * delta;
+
+		if ( resetLook ) this.lookAt(new THREE.Vector3(0,0,0));
         
         
         if(this.consoleCount === undefined) this.consoleCount = 0;

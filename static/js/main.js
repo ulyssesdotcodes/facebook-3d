@@ -11,8 +11,9 @@ requirejs.config({
     'underscore'       : 'js/lib/underscore-amd',
     'three'            : 'js/lib/three.min',
     'PointerLockControls' : 'js/lib/PointerLockControls',
+    'Post'             : 'js/post',
     'physijs'          : 'js/lib/physi',
-    'App'	           : 'js/script'
+    'App'	             : 'js/script'
   }
 });
 
